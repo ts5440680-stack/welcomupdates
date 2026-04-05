@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>mgl gas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"> <!-- Enables mobile view -->
+  <style>
+    body {
+      font-family: Arial;
+      background-color: #FFFFFF;
+      text-align: center;
+      padding: 20px;
+      margin: 0;
+    }
+    img {
+      width: 100%;
+      max-width: 300%;
+      border-radius: 10px;
+    }
+    .side-button {
+      margin-top: 20px;
+      padding: 12px;
+      width: 100%;
+      font-size: 17px;
+      background-color: #4082ff;
+      color: #FFFFFF;
+      border: none;
+      border-radius: 10px;
+    }
+    .form-container {
+      margin-top: 30px;
+      text-align: left;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .form-container h2 {
+      text-align: center;
+      background-color: #0f7213;
+      color: white;
+      padding: 10px;
+      border-radius: 5px;
+      margin-top: 0;
+    }
+    .checkbox-section {
+      margin-bottom: 15px;
+    }
+    .checkbox-section .title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+  </style>
+</head>
+<body>
+  <img src="https://meek-semolina-bb73d5.netlify.app/top.jpg" alt="Meri Tasveer">
+
+  <div class="form-container">
+    <h2>Mahanagar Gas</h2>
+    
+    <form onsubmit="return validateCheckbox();">
+      <div class="checkbox-section">
+        <div class="title">Mgl Bill*</div>
+        <div class="checkbox-label">
+          <input type="checkbox" id="agree">
+          <label for="agree">₹12</label>
+        </div>
+      </div>
+
+      <button class="side-button" type="submit">Continue</button>
+    </form>
+  </div>
+
+  <script>
+    function validateCheckbox() {
+      var checkbox = document.getElementById('agree');
+      if (!checkbox.checked) {
+        alert("Please select Bill amount.");
+        return false;
+      }
+
+      window.location.href = "page3.html"; // Change this to your next page
+      return false;
+    }
+  </script>
+</body>
+</html>

